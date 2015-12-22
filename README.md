@@ -33,7 +33,7 @@ How to Install
 
 
 ```
-        $ ./autogen.sh
+	$ ./autogen.sh
 	$ ./configure --prefix=$HOME/opt
 	$ make install
 ```
