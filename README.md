@@ -22,11 +22,11 @@ How to Install
 	$ rm valgrind-emugrind.autotools.patch
 ```
 
-3. Link the source directory inside the valgrind repository
+3. Copy the source directory inside the valgrind repository
 
 ```
 	(you are in the valgrind source directory, we suppose emugrind is one level before)
-	$ ln -s ../emugrind/emugrind emugrind
+	$ cp -r ../emugrind/emugrind .
 ```
 
 4. Compile valgrind with the tool
