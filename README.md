@@ -10,8 +10,8 @@ How to Install
 1. You need the latest valgrind svn
 
    ::
-
-	$ svn co svn://svn.valgrind.org/valgrind/trunk valgrind
+ 
+      $ svn co svn://svn.valgrind.org/valgrind/trunk valgrind
 
 
 2. You need to apply the patch provided
