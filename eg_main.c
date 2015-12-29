@@ -33,6 +33,37 @@
 
 
 static ULong n_nop = 0;
+static UInt full_debugs = 0;
+static UInt file_line_debugs = 0;
+static UInt fn_debugs = 0;
+static UInt no_debugs = 0;
+
+static void get_debug_info(Addr instr_addr, const HChar **dir,
+                           const HChar **file, const HChar **fn, UInt* line)
+{
+   Bool found_file_line = VG_(get_filename_linenum)(
+                             instr_addr, 
+                             file, dir,
+                             line
+                          );
+   Bool found_fn        = VG_(get_fnname)(instr_addr, fn);
+
+   if (!found_file_line) {
+      *file = "???";
+      *line = 0;
+   }
+   if (!found_fn) {
+      *fn = "???";
+   }
+
+   if (found_file_line) {
+      if (found_fn) full_debugs++;
+      else          file_line_debugs++;
+   } else {
+      if (found_fn) fn_debugs++;
+      else          no_debugs++;
+   }
+}
 
 static void eg_post_clo_init(void)
 {
@@ -49,11 +80,17 @@ IRSB* eg_instrument ( VgCallbackClosure* closure,
   Int i;
   IRSB *ret_irsb;
   IRStmt *st;
+  Addr cia;
+  UInt size;
+  const HChar *fn, *file, *dir;
+  UInt    line;
 
+  //  return sbIn;
+  
   i = 0;
 
   //  ppIRSB(sbIn);
-  ret_irsb = deepCopyIRSB(sbIn);
+  //  ret_irsb = deepCopyIRSB(sbIn);
 
   VG_(printf)("stmts_used:%d\n", sbIn->stmts_used);
   for (; i < sbIn->stmts_used; i++) {
@@ -65,6 +102,16 @@ IRSB* eg_instrument ( VgCallbackClosure* closure,
       VG_(printf)("NoOp\n");
       break;
     case Ist_IMark:
+      cia = st->Ist.IMark.addr;
+      size = st->Ist.IMark.len;
+      get_debug_info(cia, &dir, &file, &fn, &line);
+
+      //      VG_(printf)("dir:%s\n", dir);
+      //      VG_(printf)("file:%s\n", file);
+      VG_(printf)("fn:%s\n", fn);
+      //      VG_(printf)("line:%d\n", line);
+      
+      break;
     case Ist_AbiHint:
       //      VG_(printf)("(optional) extra info about the code\n");
       break;
@@ -76,34 +123,34 @@ IRSB* eg_instrument ( VgCallbackClosure* closure,
 
       break;
     case Ist_PutI:
-      VG_(printf)("PutI\n");
+      //      VG_(printf)("PutI\n");
       break;
     case Ist_WrTmp:
-      VG_(printf)("WrTmp\n");
+      //      VG_(printf)("WrTmp\n");
       break;
     case Ist_Store:
-      VG_(printf)("Store\n");
+      //      VG_(printf)("Store\n");
       break;
     case Ist_LoadG:
-      VG_(printf)("LoadG\n");
+      //      VG_(printf)("LoadG\n");
       break;
     case Ist_StoreG:
-      VG_(printf)("StoreG\n");
+      //      VG_(printf)("StoreG\n");
       break;
     case Ist_CAS:
-      VG_(printf)("CAS\n");
+      //      VG_(printf)("CAS\n");
       break;
     case Ist_LLSC:
-      VG_(printf)("LLSC\n");
+      //      VG_(printf)("LLSC\n");
       break;
     case Ist_Dirty:
-      VG_(printf)("Dirty\n");
+      //      VG_(printf)("Dirty\n");
       break;
     case Ist_MBE:
-      VG_(printf)("MBE\n");
+      //      VG_(printf)("MBE\n");
       break;
     case Ist_Exit:
-      VG_(printf)("Exit\n");
+      //      VG_(printf)("Exit\n");
       break;
     default:
       VG_(printf)("st->tag:%d\n", st->tag);
