@@ -1,13 +1,10 @@
 
 /*--------------------------------------------------------------------*/
-/*--- Emugrind: instrument emulation.                    eg_main.c ---*/
+/*--- Emugrind: cheap CPU emulation.                     eg_main.c ---*/
 /*--------------------------------------------------------------------*/
 
 /*
-   This file is part of Nulgrind, the minimal Valgrind tool,
-   which does no instrumentation or analysis.
-
-   Copyright (C) 2015 Sebastien Tricaud
+   Copyright (C) 2017 Sebastien Tricaud
       sebastien@honeynet.org
 
    This program is free software; you can redistribute it and/or
@@ -31,6 +28,7 @@
 #include "pub_tool_basics.h"
 #include "pub_tool_tooliface.h"
 
+#include "eg_syscall_names.h"
 
 static ULong n_nop = 0;
 static UInt full_debugs = 0;
@@ -84,93 +82,80 @@ IRSB* eg_instrument ( VgCallbackClosure* closure,
   UInt size;
   const HChar *fn, *file, *dir;
   UInt    line;
-
+  int syscall_id;
   //  return sbIn;
   
   i = 0;
 
-  //  ppIRSB(sbIn);
-  //  ret_irsb = deepCopyIRSB(sbIn);
+  /* ppIRSB(sbIn); */
+ /* for (; i < sbIn->stmts_used; i++) { */
+ /*    st = sbIn->stmts[i]; */
 
-  VG_(printf)("stmts_used:%d\n", sbIn->stmts_used);
   for (; i < sbIn->stmts_used; i++) {
     st = sbIn->stmts[i];
 
     switch(st->tag) {
-    case Ist_NoOp:
-      n_nop++;
-      VG_(printf)("NoOp\n");
-      break;
-    case Ist_IMark:
-      cia = st->Ist.IMark.addr;
-      size = st->Ist.IMark.len;
-      get_debug_info(cia, &dir, &file, &fn, &line);
-
-      //      VG_(printf)("dir:%s\n", dir);
-      //      VG_(printf)("file:%s\n", file);
-      VG_(printf)("fn:%s\n", fn);
-      //      VG_(printf)("line:%d\n", line);
-      
-      break;
-    case Ist_AbiHint:
-      //      VG_(printf)("(optional) extra info about the code\n");
-      break;
     case Ist_Put:
       //      VG_(printf)("Put\n");
+      if (st->Ist.Put.offset == 16) {
+  	/* RAX */
+  	const IRExpr* e;
+  	const IRConst* con;
+	//	VG_(printf)("Put in RAX\n");
+  	e = st->Ist.Put.data;
+  	if (e->tag == Iex_Const) {
+  	  con = e->Iex.Const.con;
+  	  if (con->tag == Ico_U64) {
+  	    syscall_id = (int *)con->Ico.U64;
+  	  }
+  	}
+  	// ppIRConst(e->Iex.Const.con);
+  	//
+      }
+      //      s->Ist.Put.offset
       // Int offset
       // IRExpr* data
       //st->Ist.Put.data;
 
       break;
-    case Ist_PutI:
-      //      VG_(printf)("PutI\n");
-      break;
-    case Ist_WrTmp:
-      //      VG_(printf)("WrTmp\n");
-      break;
-    case Ist_Store:
-      //      VG_(printf)("Store\n");
-      break;
-    case Ist_LoadG:
-      //      VG_(printf)("LoadG\n");
-      break;
-    case Ist_StoreG:
-      //      VG_(printf)("StoreG\n");
-      break;
-    case Ist_CAS:
-      //      VG_(printf)("CAS\n");
-      break;
-    case Ist_LLSC:
-      //      VG_(printf)("LLSC\n");
-      break;
-    case Ist_Dirty:
-      //      VG_(printf)("Dirty\n");
-      break;
-    case Ist_MBE:
-      //      VG_(printf)("MBE\n");
-      break;
-    case Ist_Exit:
-      //      VG_(printf)("Exit\n");
-      break;
-    default:
-      VG_(printf)("st->tag:%d\n", st->tag);
     }
+  } // for (; i < sbIn->stmts_used; i++) {
+
+  
+  /* ppIRJumpKind(sbIn->jumpkind); */
+  switch(sbIn->jumpkind) {
+  case Ijk_Call:
+    /* VG_(printf)("Call\n"); */
+    break;
+  case Ijk_Ret:
+    /* VG_(printf)("Return\n"); */
+    break;
+  case Ijk_Sys_syscall:
+    VG_(printf)("syscall %s\n", syscall_names[syscall_id]);
+    //    VG_(printf)("Syscall: %s\n", syscall_names[syscall_id]);
+    	    //  	    VG_(printf)("syscall name=%s\n", syscall_names[syscall_id]);
+
+  /* if (sbIn->offsIP == 184) { */
+  /*   ppIRExpr( sbIn->next ); */
+  /* } */
+    /* VG_(printf)("\n"); */
+  break;
+  case Ijk_Sys_sysenter:
+    /* VG_(printf)("Sys enter\n"); */
+    break;
   }
 
-#if 0
-  for (; i < ret_irsb->stmts_used; i++) {
-    st = ret_irsb->stmts[i];
-    st->tag = Ist_NoOp;
-  }
-  return ret_irsb;
-#endif
-
+  /* st = IRStmt_NoOp();   */
+  /* ret_irsb = emptyIRSB(); */
+  /* addStmtToIRSB(ret_irsb, st); */
+  /* return ret_irsb; */
+  
   return sbIn;
 }
 
 static void eg_fini(Int exitcode)
 {
-  VG_(umsg)("NOP count: %'llu\n", n_nop);
+  //  VG_(umsg)("NOP count: %'llu\n", n_nop);
 }
 
 static void eg_pre_clo_init(void)
@@ -179,7 +164,7 @@ static void eg_pre_clo_init(void)
    VG_(details_version)         (NULL);
    VG_(details_description)     ("Instrumenting the emulation valgrind does from multiple architectures");
    VG_(details_copyright_author)(
-      "Copyright (c) 2015 Sebastien Tricaud");
+      "Copyright (c) 2017 Sebastien Tricaud");
    VG_(details_bug_reports_to)  (VG_BUGS_TO);
 
    VG_(details_avg_translation_sizeB) ( 275 );
